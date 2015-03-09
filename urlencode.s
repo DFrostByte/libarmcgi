@@ -9,6 +9,8 @@
 	.align	2
 
 @--------------------------------------------------------------------------
+@ FUNCTION
+@--------------------------------------------------------------------------
 	.global	url_encode
 	.type	url_encode, %function
 @--------------------------------------------------------------------------
@@ -84,6 +86,54 @@ url_encode:
 	bx		lr
 
 
+
+@--------------------------------------------------------------------------
+@ FUNCTION
+@--------------------------------------------------------------------------
+	.global	url_encode_mem
+	.type	url_encode_mem, %function
+@--------------------------------------------------------------------------
+@ unsigned int url_encode_mem(const char *str);
+@
+@ @Desc:	Calculate how many bytes of memory would be needed to store
+@			a url-encoded version of @str (including terminator).
+@
+@ @str:		String to be encoded.
+@ @Return:	Number of bytes needed to store encoded @str.
+@--------------------------------------------------------------------------
+url_encode_mem:
+	tst		r0, r0			@ null pointer?
+	bxeq	lr				@ return 0
+
+	ldr	    r3, =table_valid_url_characters
+
+	eor		r1, r1			@ clear counter
+1: @LOOP
+	ldrb	r2, [r0], #1	@ read byte from @str and increment pointer
+	add		r1, #1			@ increment counter
+
+	tst		r2, r2			@ end of @str?
+	beq		2f				@BREAK
+
+	@ spaces are invalid but would be replaced with only one character
+	teq		r2, #0x20
+	beq		1b				@LOOP
+
+	@ would this character need to be encoded?
+	ldrb	r2, [r3, r2]	@ check validity in table_valid_url_characters
+	tst		r2, r2			@ will be 0 if needs encoding
+	addeq	r1, #2			@ needs another 2 bytes of space for hex
+
+	b		1b				@LOOP
+
+2: @BREAK
+
+	mov		r0, r1			@ return count of bytes needed
+	bx		lr
+
+
+
+
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	.section .rodata
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -91,9 +141,11 @@ url_encode:
 	.align	2
 
 @--------------------------------------------------------------------------
+@ VARIABLE
+@--------------------------------------------------------------------------
 	.global table_valid_url_characters
 @--------------------------------------------------------------------------
-@ char table_valid_url_characters[256];
+@ const char table_valid_url_characters[256];
 @
 @ An ascii char value can be used as an index to test if a character should
 @ be escaped when used in a url. All invalid characters have the value 0x00
@@ -132,10 +184,14 @@ table_valid_url_characters:
 	.byte	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	.byte	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 
+
+
+@--------------------------------------------------------------------------
+@ VARIABLE
 @--------------------------------------------------------------------------
 	.global table_hex_characters
 @--------------------------------------------------------------------------
-@ char * table_hex_characters = "0123456789ABCDEF";
+@ const char * table_hex_characters = "0123456789ABCDEF";
 @
 @ This table can be used for looking up the character representation of a
 @ nibble's value.

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 
 extern char *ascii_hex_val_table;
 
@@ -13,6 +14,8 @@ url_decode(char *url);
 
 extern char *
 url_encode(char *str, char *url);
+extern unsigned int
+url_encode_mem(char *str);
 
 
 char *
@@ -79,19 +82,23 @@ main(int argc, char *argv[])
 
 	if (! strcmp(argv[1], "url"))
 	{
+		char *enc, *ret;
+		unsigned int enc_size;
 		char *dec = url_decode(argv[2]);
-		char *enc = calloc(strlen(dec), 3);
-		char *ret;
 
-		if (! enc)
-		{
-			printf("Memory error\n");
-			return 1;
-		}
+		assert(dec);
+
+		enc_size = url_encode_mem(dec);
+		enc = malloc(enc_size);
+
+		assert(enc);
 
 		ret = url_encode(dec, enc);
 
-		printf("[%s] [%s] [%s]\n", dec, enc, ret);
+		assert(enc_size == strlen(enc) + 1);
+
+		printf("decoded:[%s] encoded:[%s] enc_size:[%u]\n",
+		       dec, enc, enc_size);
 	}
 	else if (! strcmp(argv[1], "query"))
 	{
