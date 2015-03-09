@@ -11,6 +11,9 @@ extern char *ascii_hex_val_table;
 extern char *
 url_decode(char *url);
 
+extern char *
+url_encode(char *str, char *url);
+
 
 char *
 qs_get_value(const char *key, const char *query_str)
@@ -76,7 +79,19 @@ main(int argc, char *argv[])
 
 	if (! strcmp(argv[1], "url"))
 	{
-		printf("%s\n", url_decode(argv[2]));
+		char *dec = url_decode(argv[2]);
+		char *enc = calloc(strlen(dec), 3);
+		char *ret;
+
+		if (! enc)
+		{
+			printf("Memory error\n");
+			return 1;
+		}
+
+		ret = url_encode(dec, enc);
+
+		printf("[%s] [%s] [%s]\n", dec, enc, ret);
 	}
 	else if (! strcmp(argv[1], "query"))
 	{
