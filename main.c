@@ -10,6 +10,9 @@
 extern char *ascii_hex_val_table;
 
 extern char *
+ACGI_is_uint(const char *str);
+
+extern char *
 url_decode(char *url);
 
 extern char *
@@ -74,37 +77,38 @@ _url_decode(char *str)
 	return str;
 }
 
+static void _test_ACGI_is_uint(void)
+{
+	const char *valid = "0123456789";
+	const char *invalid[] = { "",
+		                      "+01234",
+							  "-1234",
+							  0,
+							  "1234a" };
+ 	char buf[2] = { 0, 0 };
+	int i;
+
+	for (i = 0; i < 256; ++i)
+	{
+		*buf = i;
+		if (i > ('0' - 1) && i < ('9' + 1))
+			assert(ACGI_is_uint(buf) == &buf[1]);
+		else
+			assert(ACGI_is_uint(buf) == 0);
+	}
+
+	assert(ACGI_is_uint(valid) == strchr(valid, 0));
+
+	for (i = 0; i < sizeof(invalid) / sizeof(char *); ++i)
+		assert(ACGI_is_uint(invalid[i]) == 0);
+}
+
 int
 main(int argc, char *argv[])
 {
-	if (argc != 3)
-		return 1;
+	_test_ACGI_is_uint();
 
-	if (! strcmp(argv[1], "url"))
-	{
-		char *enc, *ret;
-		unsigned int enc_size;
-		char *dec = url_decode(argv[2]);
-
-		assert(dec);
-
-		enc_size = url_encode_mem(dec);
-		enc = malloc(enc_size);
-
-		assert(enc);
-
-		ret = url_encode(dec, enc);
-
-		assert(enc_size == strlen(enc) + 1);
-
-		printf("decoded:[%s] encoded:[%s] enc_size:[%u]\n",
-		       dec, enc, enc_size);
-	}
-	else if (! strcmp(argv[1], "query"))
-	{
-		char *qs = getenv("QUERY_STRING");
-		printf("%s\n", qs_get_value(argv[2], qs));
-	}
+	puts("Tests passed.");
 
 	return 0;
 }
