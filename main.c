@@ -11,6 +11,8 @@ extern char *ascii_hex_val_table;
 
 extern char *
 ACGI_is_uint(const char *str);
+extern char *
+ACGI_rtrim(char *str);
 
 extern char *
 url_decode(char *url);
@@ -103,10 +105,33 @@ static void _test_ACGI_is_uint(void)
 		assert(ACGI_is_uint(invalid[i]) == 0);
 }
 
+static void
+_test_ACGI_rtrim(void)
+{
+	char *strings[] = {	NULL, NULL,
+						"test1", "test1",
+						"", "",
+						" ", "",
+						"test    ", "test",
+						"example\n", "example",
+						"line\r\n", "line" };
+	size_t	n = sizeof(strings) / (sizeof (char*)) / 2;
+
+	char *res; 
+return;	
+	while (n)
+	{
+		--n;
+		res = ACGI_rtrim(strings[n * 2]);
+		assert(! strcmp(res, strings[(n * 2) + 1]));
+	}
+}
+
 int
 main(int argc, char *argv[])
 {
 	_test_ACGI_is_uint();
+	_test_ACGI_rtrim();
 
 	puts("Tests passed.");
 
