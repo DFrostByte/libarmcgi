@@ -6,15 +6,14 @@
 	.section .text
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-	.align	2
-
 @--------------------------------------------------------------------------
 @ FUNCTION
 @--------------------------------------------------------------------------
+	.align	2
 	.global	ACGI_is_uint
 	.type	ACGI_is_uint, %function
 @--------------------------------------------------------------------------
-@ ACGI_is_uint(const char *str);
+@ char *ACGI_is_uint(const char *str);
 @
 @ @Desc:	Scan str and test if each byte is an ascii number character.
 @
@@ -83,33 +82,33 @@ ACGI_rtrim:
 	@----------------------
 	@ move to last string character - before terminator
 	@----------------------
-.L_rtrim_get_last_char:
-	ldrb	r2, [r1], #1
-	tst		r2, r2			@ zero byte?
-	bne		.L_rtrim_get_last_char
+1: @LOOP
+	ldrb	r2, [r1], #1 	@ load byte and increment pointer
+	tst		r2, r2			@ if not zero byte
+	bne		1b				@LOOP
 
 	@ post increment has left pointer one beyond terminator
 	sub		r1, #2			@ now pointing to last character 
 	@----------------------
 
 	eor		r3, r3			@ set to zero for terminating
-	b		.L_rtrim_loop		
+	b		3f				@ENTRY
 	@----------------------
 	@ while (! (ptr < string)) --ptr;
 	@----------------------
-.L_rtrim_invalid: 
+2: @TRIM
 	strb	r3, [r1, #1]	@ zero invalid character
-.L_rtrim_loop:
-	cmp		r1, r0
-	blt		.L_rtrim_end	@ pointing before first string char
-	ldrb	r2, [r1], #-1	@ load byte from string
+3: @ENTRY
+	cmp		r1, r0			@ end loop if pointer < string 
+	blt		4f				@BREAK
+	ldrb	r2, [r1], #-1	@ load byte from string and decrement pointer
 	cmp		r2, #0x21		@ below 0x21 are space and control chars
-	blt		.L_rtrim_invalid
+	blt		2b				@TRIM
 	cmp		r2, #127		@ is it DEL?
-	beq		.L_rtrim_invalid
-	@ valid character found
+	beq		2b				@TRIM
+	@ valid character found. fall through / @BREAK
 	@----------------------
 
-.L_rtrim_end:
+4:@BREAK
 	bx		lr
 
