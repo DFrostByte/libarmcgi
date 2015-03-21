@@ -6,15 +6,14 @@
 	.section .text
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-	.align	2
-
 @--------------------------------------------------------------------------
 @ FUNCTION
 @--------------------------------------------------------------------------
-	.global	url_encode
-	.type	url_encode, %function
+	.align	2
+	.global	ACGI_url_encode
+	.type	ACGI_url_encode, %function
 @--------------------------------------------------------------------------
-@ char *url_encode(const char *str, char *url);
+@ char *ACGI_url_encode(const char *str, char *url);
 @
 @ @Desc:	Replace ' ' with '+'. Characters that are not in the ranges
 @			0-9, a-z, A-Z and not in ".-_" will be replaced with %XX, where
@@ -27,7 +26,9 @@
 @ @url:		Memory to store encoded string.
 @ @Return:	@url or NULL (0) if either parameter is NULL.
 @--------------------------------------------------------------------------
-url_encode:
+
+ACGI_url_encode: 
+
 	@ test for NULL parameters
 	tst		r0, r0
 	tstne	r1,	r1
@@ -37,8 +38,8 @@ url_encode:
 	@ save url address for return and registers used during hex decoding
 	push	{r1,r4-r6}
 
-	ldr	    r5, =table_valid_url_characters
-	ldr	    r6, =table_hex_characters
+	ldr	    r5, =ACGI_tbl_url_valid_chars
+	ldr	    r6, =ACGI_tbl_hex_chars
 
 1: @LOOP
 	ldrb	r2, [r0], #1	@ load str character and increment pointer
@@ -57,7 +58,7 @@ url_encode:
 	@---------------------
 	@ does character need encoding?
 	@---------------------
-	ldrb	r3, [r5, r2]	@ check validity in table_valid_url_characters
+	ldrb	r3, [r5, r2]	@ check validity in ACGI_tbl_url_valid_chars
 	cmp		r3, #0			@ will be 0 if needs encoding
 	bne		2f				@WRITE
 
@@ -90,10 +91,11 @@ url_encode:
 @--------------------------------------------------------------------------
 @ FUNCTION
 @--------------------------------------------------------------------------
-	.global	url_encode_mem
-	.type	url_encode_mem, %function
+	.align 2
+	.global	ACGI_url_encode_mem
+	.type	ACGI_url_encode_mem, %function
 @--------------------------------------------------------------------------
-@ unsigned int url_encode_mem(const char *str);
+@ unsigned int ACGI_url_encode_mem(const char *str);
 @
 @ @Desc:	Calculate how many bytes of memory would be needed to store
 @			a url-encoded version of @str (including terminator).
@@ -101,11 +103,13 @@ url_encode:
 @ @str:		String to be encoded.
 @ @Return:	Number of bytes needed to store encoded @str.
 @--------------------------------------------------------------------------
-url_encode_mem:
+
+ACGI_url_encode_mem:
+
 	tst		r0, r0			@ null pointer?
 	bxeq	lr				@ return 0
 
-	ldr	    r3, =table_valid_url_characters
+	ldr	    r3, =ACGI_tbl_url_valid_chars
 
 	eor		r1, r1			@ clear counter
 1: @LOOP
@@ -120,7 +124,7 @@ url_encode_mem:
 	beq		1b				@LOOP
 
 	@ would this character need to be encoded?
-	ldrb	r2, [r3, r2]	@ check validity in table_valid_url_characters
+	ldrb	r2, [r3, r2]	@ check validity in ACGI_tbl_url_valid_chars
 	tst		r2, r2			@ will be 0 if needs encoding
 	addeq	r1, #2			@ needs another 2 bytes of space for hex
 
@@ -138,19 +142,19 @@ url_encode_mem:
 	.section .rodata
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-	.align	2
-
 @--------------------------------------------------------------------------
 @ VARIABLE
 @--------------------------------------------------------------------------
-	.global table_valid_url_characters
+	.align	2
+	.global ACGI_tbl_url_valid_chars
 @--------------------------------------------------------------------------
-@ const char table_valid_url_characters[256];
+@ const char ACGI_tbl_url_valid_chars[256];
 @
 @ An ascii char value can be used as an index to test if a character should
 @ be escaped when used in a url. All invalid characters have the value 0x00
 @--------------------------------------------------------------------------
-table_valid_url_characters:
+
+ACGI_tbl_url_valid_chars:
 	.byte	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	.byte	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	.byte	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
@@ -189,12 +193,15 @@ table_valid_url_characters:
 @--------------------------------------------------------------------------
 @ VARIABLE
 @--------------------------------------------------------------------------
-	.global table_hex_characters
+	.align	2
+	.global ACGI_tbl_hex_chars
 @--------------------------------------------------------------------------
-@ const char * table_hex_characters = "0123456789ABCDEF";
+@ const char * ACGI_tbl_hex_chars = "0123456789ABCDEF";
 @
 @ This table can be used for looking up the character representation of a
 @ nibble's value.
 @--------------------------------------------------------------------------
-table_hex_characters:
+
+ACGI_tbl_hex_chars:
 	.asciz	"0123456789ABCDEF"
+

@@ -84,11 +84,11 @@ ACGI_rtrim:
 	@----------------------
 1: @LOOP
 	ldrb	r2, [r1], #1 	@ load byte and increment pointer
-	tst		r2, r2			@ if not zero byte
+	cmp		r2, #0			@ if not zero byte
 	bne		1b				@LOOP
 
 	@ post increment has left pointer one beyond terminator
-	sub		r1, #2			@ now pointing to last character 
+	sub		r1, #2			@ now pointing to last character
 	@----------------------
 
 	eor		r3, r3			@ set to zero for terminating
@@ -99,7 +99,7 @@ ACGI_rtrim:
 2: @TRIM
 	strb	r3, [r1, #1]	@ zero invalid character
 3: @ENTRY
-	cmp		r1, r0			@ end loop if pointer < string 
+	cmp		r1, r0			@ end loop if pointer < string
 	blt		4f				@BREAK
 	ldrb	r2, [r1], #-1	@ load byte from string and decrement pointer
 	cmp		r2, #0x21		@ below 0x21 are space and control chars

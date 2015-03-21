@@ -1,86 +1,36 @@
 #define _GNU_SOURCE
 
-#include <envz.h>
-#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
 
-extern char *ascii_hex_val_table;
+#include "acgi.h"
 
-extern char *
-ACGI_is_uint(const char *str);
-extern char *
-ACGI_rtrim(char *str);
+static void _test_ACGI_is_uint(void);
+static void _test_ACGI_rtrim(void);
+static void _test_ACGI_url(void);
 
-extern char *
-url_decode(char *url);
-
-extern char *
-url_encode(char *str, char *url);
-extern unsigned int
-url_encode_mem(char *str);
-
-
-char *
-qs_get_value(const char *key, const char *query_str)
+int
+main(int argc, char *argv[])
 {
-	char *qs = strdupa(query_str);
-	const size_t qs_size = strlen(qs) + 1;
-	char *ptr = NULL;
-	char *found = NULL;
+	_test_ACGI_is_uint();
+	_test_ACGI_rtrim();
+	_test_ACGI_url();
 
-	if (! key || ! *key || ! qs)
-		return NULL;
+	puts("Tests passed.");
 
-	/* prepare query string for use with envz */
-	for (ptr = qs; ptr = strchr(ptr, '&'); ++ptr)
-		*ptr = '\0';
-
-	return strdup(envz_get(qs, qs_size, key));
+	return 0;
 }
 
-static char *
-_url_decode(char *str)
-{
-	char *ptr   =  str;
-	char *write =  str;
-	char  val   = *str;
-	char hex[2];
-
-	for ( ; val; ++ptr, ++write)
-	{
-		val = *ptr;
-
-		if (val == '+')
-			val = ' ';
-		else if (val == '%')
-		{
-			/* check first expected hex character isn't null to avoid reading
-			 * second hex character from beyond the string
-			 */
-			if (ptr[1])
-			{
-				hex[0] = ascii_hex_val_table[ptr[1]];
-				hex[1] = ascii_hex_val_table[ptr[2]];
-
-				if (hex[0] != 0xFF && hex[1] != 0xFF)
-				{
-					val = (hex[0] << 4) | hex[1];
-					ptr += 2;
-				}
-			}
-		}
-
-		*write = val;
-	}
-
-	return str;
-}
-
+/* ---------------------------------------------------------------------------
+ * STATIC FUNCTIONS
+ * ---------------------------------------------------------------------------
+ */
 static void _test_ACGI_is_uint(void)
 {
+	puts(__FUNCTION__);
+
 	const char *valid = "0123456789";
 	const char *invalid[] = { "",
 		                      "+01234",
@@ -108,35 +58,58 @@ static void _test_ACGI_is_uint(void)
 static void
 _test_ACGI_rtrim(void)
 {
-	char *strings[] = {	NULL, NULL,
-						"test1", "test1",
-						"", "",
-						" ", "",
-						"test    ", "test",
-						"example\n", "example",
-						"line\r\n", "line" };
-	size_t	n = sizeof(strings) / (sizeof (char*)) / 2;
+	puts(__FUNCTION__);
 
-	char *res; 
-return;	
+	char before[][10] =	{	"test1",
+							"",
+							" ",
+							"test    ",
+							"example\n",
+							"line\r\n"		};
+	char after[][10] = 	{ 	"test1",
+							"",
+							"",
+							"test",
+							"example",
+							"line" 			};
+	size_t	n = sizeof(before) / 10;
+
+	char *res;
 	while (n)
 	{
 		--n;
-		res = ACGI_rtrim(strings[n * 2]);
-		assert(! strcmp(res, strings[(n * 2) + 1]));
+		res = ACGI_rtrim(before[n]);
+		assert(! strcmp(res, after[n]));
 	}
 }
 
-int
-main(int argc, char *argv[])
+static void
+_test_ACGI_url(void)
 {
-	_test_ACGI_is_uint();
-	_test_ACGI_rtrim();
+	puts(__FUNCTION__);
 
-	puts("Tests passed.");
+	const char *urlvalid = "%._-+0123456789"
+	                       "abcdefghijklmnopqrstuvwxyz"
+	                       "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	char str[256];
+	char enc[sizeof(str) * 3];
+	char dec[sizeof(enc)];
 
-	return 0;
+	int c;
+
+	for (c = 0; c < 256; ++c)
+		str[c] = (char) c + 1;
+	str[c] = 0;
+
+	assert(strlen(str) == 255);
+
+	assert(ACGI_url_encode(str, enc));
+	assert(strspn(enc, urlvalid) == strlen(enc));
+
+	strcpy(dec, enc);
+	assert(ACGI_url_decode(dec));
+	assert(strcmp(enc, dec));
+	assert(! strcmp(str, dec));
 }
-
 
 
