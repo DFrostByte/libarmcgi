@@ -13,23 +13,25 @@
 	.global	ACGI_url_decode
 	.type	ACGI_url_decode, %function
 @--------------------------------------------------------------------------
-@ char *ACGI_url_decode(char *url);
+@ char *ACGI_url_decode(char *url, write);
 @
-@ @Desc: 	Takes address of null-terminated string in r0. Replaces '+' 
-@			with ' ' and decodes pairs of hex characters preceded by '%'. 
-@			If either hex character is null (end of string) or not a hex 
-@			character, the '%' will be copied before continuing to loop 
+@ @Desc: 	Takes address of null-terminated string in r0. Replaces '+'
+@			with ' ' and decodes pairs of hex characters preceded by '%'.
+@			If either hex character is null (end of string) or not a hex
+@			character, the '%' will be copied before continuing to loop
 @			through the string from the character following '%'.
 @
-@ @url:		Both the source and destination string.
+@ @url:		Source string. Also destination string if @write == NULL.
+@ @write:	Destination string.
 @
 @ @Return:	@url.
 @--------------------------------------------------------------------------
 
 ACGI_url_decode:
 
-	movs	r1, r0			@ copy str address for updating
-	bxeq	lr				@ return NULL pointer
+	teq		r1, #0				@ @write == NULL?
+	moveqs	r1, r0				@ yes, @write = @url
+	bxeq	lr					@ return NULL pointer
 
 	@ save str address for return and registers used during hex decoding
 	push	{r0,r4-r6}
@@ -37,50 +39,49 @@ ACGI_url_decode:
 	ldr	    r6, =ACGI_tbl_ascii_hex_val
 
 1: @LOOP
-	ldrb	r2, [r0], #1	@ load str byte and increment pointer
+	ldrb	r2, [r0], #1		@ load @url byte and increment pointer
 
 	@---------------------
 	@ replace '+' with ' '
 	@---------------------
 	cmp		r2, #'+
 	moveq	r2, #0x20
-	beq		2f				@CONTINUE
+	bge		2f					@CONTINUE '%' < '+'
 	@---------------------
 
 	@---------------------
 	@ if char is '%' replace with value of the two following hex chars.
 	@---------------------
-	cmp		r2, #'%
-	bne		2f				@CONTINUE
+	teq		r2, #'%
+	bne		2f					@CONTINUE
 
-	ldrb	r4, [r0]		@ fetch high nibble byte
-	tst   	r4, r4			@ is it null?
-	ldrneb	r5, [r0, #1]	@ no, fetch low nibble byte
-	tstne	r5, r5			@ is it null?
-	beq		2f				@CONTINUE if either byte was null
+	ldrb	r4, [r0]			@ fetch high nibble byte
+	teq   	r4, #0				@ is it null?
+	ldrneb	r5, [r0, #1]		@ no, fetch low nibble byte
+	teqne	r5, #0				@ is it null?
+	beq		2f					@CONTINUE if either byte was null
 
-	ldrb	r4, [r6, r4]	@ load first byte value from hex lookup table
-	ldrb	r5, [r6, r5]	@ then the second
+	ldrb	r4, [r6, r4]		@ load first byte value from hex lookup table
+	ldrb	r5, [r6, r5]		@ then the second
 
 	@ invalid hex chars result in 0xFF
-	cmp		r4, #0xFF
-	cmpne	r5, #0xFF
-	beq		2f				@CONTINUE
+	teq		r4, #0xFF
+	teqne	r5, #0xFF
+	beq		2f					@CONTINUE
 
 	@ alter value in r2 to the byte value represented by the hex characters.
-	mov		r2, r4, lsl #4	@ set high nibble
-	orr		r2, r2, r5		@ set low nibble
-	add		r0, #2			@ increase pointer beyond converted hex chars
+	orr		r2, r5, r4, lsl #4	@ set low nibble
+	add		r0, #2				@ increase pointer beyond converted hex chars
 	@---------------------
 
 2: @CONTINUE
-	strb	r2, [r1], #1	@ save byte using the update pointer
-	tst		r2, r2			@ null byte - end of string?
-	bne		1b				@LOOP
+	strb	r2, [r1], #1		@ save byte using the update pointer
+	teq		r2, #0				@ null byte - end of string?
+	bne		1b					@LOOP (no)
 
 	@LOOP_END
 
-	pop		{r0,r4-r6}		@ restore original str and used registers
+	pop		{r0,r4-r6}			@ restore original str and used registers
 	bx		lr
 
 
@@ -97,7 +98,7 @@ ACGI_url_decode:
 @--------------------------------------------------------------------------
 @ const char ACGI_tbl_ascii_hex_val[256];
 @
-@ @Desc:	An ascii char value can be used as an index to lookup its 
+@ @Desc:	An ascii char value can be used as an index to lookup its
 @			corresponding hex value.
 @--------------------------------------------------------------------------
 

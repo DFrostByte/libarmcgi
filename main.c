@@ -106,8 +106,13 @@ _test_ACGI_url(void)
 	assert(ACGI_url_encode(str, enc));
 	assert(strspn(enc, urlvalid) == strlen(enc));
 
+
+	assert(ACGI_url_decode(enc, dec));
+	assert(strcmp(enc, dec));
+	assert(! strcmp(str, dec));
+
 	strcpy(dec, enc);
-	assert(ACGI_url_decode(dec));
+	assert(ACGI_url_decode(dec, NULL));
 	assert(strcmp(enc, dec));
 	assert(! strcmp(str, dec));
 }
