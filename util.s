@@ -156,3 +156,114 @@ ACGI_file_get_size:
 
 
 
+@--------------------------------------------------------------------------
+@ FUNCTION
+@--------------------------------------------------------------------------
+	.align	2
+	.global	ACGI_file_to_str
+	.type	ACGI_file_to_str, %function
+	.extern	malloc
+	.extern open
+@--------------------------------------------------------------------------
+@ char * ACGI_file_to_str(const char *path, char *str);
+@
+@ @Desc:	Read entire file into memory and terminate with '\0'.
+@
+@ @path:	Path to file.
+@ @str:		Pointer to store file contents. If NULL, will be allocated
+@			using malloc.
+@
+@ @Return:	@str if successful. NULL otherwise.
+@--------------------------------------------------------------------------
+
+ACGI_file_to_str:
+
+	@--------------------------
+	@ local variables
+	@--------------------------
+	@ r4 = @str
+	@ r5 = file size
+	@ r6 = flag memory allocated
+	@ r7 = @path and file descriptor
+	@ r8 = bytes read
+	@--------------------------
+
+	stmfd	sp!, {r4-r8, lr}
+
+	@--------------------------
+	@ get @path file size
+	@--------------------------
+	mov		r4, r1 				@ copy @str to r4
+	movs	r7, r0				@ copy @path to r7
+	beq		2f @LEAVE			@ NULL path
+	bl		ACGI_file_get_size
+	movs	r5, r0				@ r5 <- file size
+	beq		2f @LEAVE			@ get file size failed. return 0
+	@--------------------------
+
+	movne	r6, #0				@ r6 <- flag memory not allocated
+	@--------------------------
+	@ allocate memory if @str == NULL
+	@--------------------------
+	teq		r4, #0				@ is @str NULL?
+	bne		1f @OPEN FILE		@ no, skip memory allocation
+	add		r0, r5, #1			@ file size + 1
+	bl		malloc
+	movs	r4, r0				@ @str <- allocated memory
+	beq		2f @LEAVE			@ NULL pointer (malloc failed), return.
+	mov		r6, #1				@ flag memory allocated
+	@--------------------------
+	
+1:@OPEN FILE:
+	@--------------------------
+	mov		r0, r7				@ r0 <- @path
+	bl		open				@ open (@path, O_RDONLY) r1 already = 0
+	cmn		r0, #1				@ returned -1 ?
+	beq		3f @ERROR			@ yes, open failed
+	@--------------------------
+
+	@--------------------------
+	@ read file data into @str
+	@--------------------------
+	mov		r7, r0				@ 1 = file desc. @path no longer needed
+	mov		r1, r4				@ 2 = @str
+	mov		r2, r5				@ 3 = bytes to read (file size)
+	bl		read
+	mov		r8, r0				@ r8 <- bytes read
+	@--------------------------
+
+	@--------------------------
+	@ close file
+	@--------------------------
+	mov		r0, r7 				@ 1 = file desc
+	bl		close
+	@--------------------------
+
+	teq		r8, r5				@ bytes read == file size ?
+	bne		3f @ERROR			@ no
+
+	@--------------------------
+	@ terminate @str
+	@--------------------------
+	mov		r1, #0				@ load string terminator
+	strb	r1, [r4, r5]		@ terminate @str
+	@--------------------------
+
+	mov		r0, r4 				@ return @str
+
+2:@LEAVE:
+	ldmfd	sp!, {r4-r8, pc}
+
+3:@ERROR:
+	teq		r6, #1				@ was memory allocated ?
+	@--------------------------  
+	@ free allocated memory
+	@--------------------------  
+	moveq	r0, r4				@ 1 = @str
+	bleq	free
+	@--------------------------  
+	mov		r0, #0				@ return NULL
+	b		2b @LEAVE
+
+	
+
