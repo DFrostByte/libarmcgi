@@ -3,6 +3,7 @@ unsigned int ACGI_url_encode_mem(const char *str);
 char *ACGI_url_decode(char *url, char *write);
 char *ACGI_is_uint(const char *str);
 char *ACGI_rtrim(char *str);
+unsigned int ACGI_file_get_size(const char *path);
 extern const char *ACGI_tbl_url_valid_chars; //[256];
 extern const char *ACGI_tbl_hex_chars; //"0123456789ABCDEF";
 extern const char *ACGI_tbl_ascii_hex_val; //[256];

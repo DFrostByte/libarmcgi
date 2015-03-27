@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <assert.h>
 
 #include "acgi.h"
@@ -10,6 +11,7 @@
 static void _test_ACGI_is_uint(void);
 static void _test_ACGI_rtrim(void);
 static void _test_ACGI_url(void);
+static void _test_ACGI_file_get_size(void);
 
 int
 main(int argc, char *argv[])
@@ -17,6 +19,7 @@ main(int argc, char *argv[])
 	_test_ACGI_is_uint();
 	_test_ACGI_rtrim();
 	_test_ACGI_url();
+	_test_ACGI_file_get_size();
 
 	puts("Tests passed.");
 
@@ -117,4 +120,18 @@ _test_ACGI_url(void)
 	assert(! strcmp(str, dec));
 }
 
+static void 
+_test_ACGI_file_get_size(void) 
+{
+	puts(__FUNCTION__);
 
+	const char *path = __FILE__;
+	unsigned int size;
+	struct stat fstats;
+
+	assert(stat (path, &fstats) == 0);
+	assert(fstats.st_size);
+	assert(ACGI_file_get_size(path) == fstats.st_size);
+
+	assert(ACGI_file_get_size(NULL) == 0);
+}

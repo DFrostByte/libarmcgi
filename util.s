@@ -112,3 +112,47 @@ ACGI_rtrim:
 4:@BREAK
 	bx		lr
 
+
+
+@--------------------------------------------------------------------------
+@ FUNCTION
+@--------------------------------------------------------------------------
+	.align	2
+	.global	ACGI_file_get_size
+	.type	ACGI_file_get_size, %function
+	.extern	stat
+@--------------------------------------------------------------------------
+@ unsigned int ACGI_file_get_size(const char *path);
+@
+@ @Desc:	Get size of file @path. Uses c library function 'stat'.
+@
+@ @path:	Path to file.
+@ @Return:	Non-zero if successful.
+@--------------------------------------------------------------------------
+
+ACGI_file_get_size:
+
+	@ return 0 if NULL pointer
+	teq		r0, #0
+	bxeq	lr
+
+	@ enter
+	stmfd	sp!, {lr}
+	sub		sp, #92
+
+	@--------------------------
+	@ stat (path, &stats)
+	@--------------------------
+	mov		r1, sp				@ struct address into r1
+	bl		stat
+	teq		r0, #0				@ stat returns 0 if successful
+	ldreq	r0, [sp, #44]		@ so load file size
+	movne	r0, #0				@ otherwise, 0
+	@--------------------------
+
+	@ leave
+	add		sp, #92
+	ldmfd	sp!, {pc}
+
+
+
