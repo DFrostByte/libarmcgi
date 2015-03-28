@@ -77,12 +77,17 @@ _test_ACGI_rtrim(void)
 							"line" 			};
 	size_t	n = sizeof(before) / 10;
 
-	char *res;
+	char buf[30];
 	while (n)
 	{
 		--n;
-		res = ACGI_rtrim(before[n]);
-		assert(! strcmp(res, after[n]));
+		strcpy(buf, before[n]);
+		assert(ACGI_rtrim(buf, NULL) == buf);
+		assert(! strcmp(buf, after[n]));
+
+		strcpy(buf, before[n]);
+		assert(ACGI_rtrim(buf, buf + strlen(buf)) == buf);
+		assert(! strcmp(buf, after[n]));
 	}
 }
 

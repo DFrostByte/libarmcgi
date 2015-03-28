@@ -64,41 +64,47 @@ ACGI_is_uint:
 	.global	ACGI_rtrim
 	.type	ACGI_rtrim, %function
 @--------------------------------------------------------------------------
-@ char *ACGI_rtrim(char *str);
+@ char *ACGI_rtrim(char *str, char *end);
 @
 @ @Desc:	Remove trailing space and control characters from @str. Space
 @			and control characters are 127 (DEL) and anything below 0x21.
 @			Any matching bytes will be zeroed.
 @
 @ @str:		String to trim.
+@ @end:		Pointer to terminating byte of @str. If NULL, it will be
+@			searched for before trimming begins.
 @ @Return:	@str
 @--------------------------------------------------------------------------
 
 ACGI_rtrim:
 
-	movs	r1, r0			@ copy string pointer
+	teq		r0, #0			@ @str == NULL?
 	bxeq	lr				@ return if NULL
+	teq		r1, #0			@ pointer to end of @str?
+	bne		1f @START		@ yes, skip finding end of @str
 
 	@----------------------
 	@ move to last string character - before terminator
 	@----------------------
-1: @LOOP
+	mov		r1, r0			@ copy string pointer
+0:@FIND_STR_END
 	ldrb	r2, [r1], #1 	@ load byte and increment pointer
 	cmp		r2, #0			@ if not zero byte
-	bne		1b				@LOOP
+	bne		0b @FIND_STR_END
 
 	@ post increment has left pointer one beyond terminator
 	sub		r1, #2			@ now pointing to last character
 	@----------------------
 
+1:@START
 	eor		r3, r3			@ set to zero for terminating
 	b		3f				@ENTRY
 	@----------------------
 	@ while (! (ptr < string)) --ptr;
 	@----------------------
-2: @TRIM
+2:@TRIM
 	strb	r3, [r1, #1]	@ zero invalid character
-3: @ENTRY
+3:@ENTRY
 	cmp		r1, r0			@ end loop if pointer < string
 	blt		4f				@BREAK
 	ldrb	r2, [r1], #-1	@ load byte from string and decrement pointer
