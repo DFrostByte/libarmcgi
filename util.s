@@ -273,3 +273,69 @@ ACGI_file_to_str:
 
 	
 
+@--------------------------------------------------------------------------
+@ FUNCTION
+@--------------------------------------------------------------------------
+	.align	2
+	.global	ACGI_ltrim
+	.type	ACGI_ltrim, %function
+	.extern	strlen
+	.extern	memmove
+@--------------------------------------------------------------------------
+@ char *ACGI_ltrim(char *str);
+@
+@ @Desc:	Remove leading space and control characters from @str. Space
+@			and control characters are 127 (DEL) and anything below 0x21.
+@			Uses 'memmove' for the actual trim.
+@
+@ @str:		String to trim.
+@ @Return:	@str
+@--------------------------------------------------------------------------
+
+ACGI_ltrim:
+
+	movs	r1, r0			@ @str == NULL?
+	bxeq	lr				@ yes, return 
+
+	@----------------------
+	@ find the first legal character in @str
+	@ while (*str) ++str;
+	@----------------------
+	b		2f @SCAN
+1:@CONDITION
+	teq		r2, #0			@ end of string?
+	streqb	r2, [r0]		@ set empty string
+	beq		9f @RETURN		@ only illegal characters found 
+2:@SCAN
+	ldrb	r2, [r1], #1	@ load byte from string and increment pointer
+	cmp		r2, #0x21		@ below 0x21 are space and control chars
+	blt		1b @CONDITION	@ could be end of string
+	teq		r2, #127		@ is it DEL?
+	beq		2b @SCAN
+	@ valid character found. fall through / @BREAK
+	@----------------------
+	
+	@ is there anything to trim?
+	sub		r1, #1			@ undo post-increment 
+	cmp		r1, r0			@ if r1 > r0 illegal characters were found
+	ble		9f @RETURN		@ if not, nothing to trim
+
+@TRIM
+	@----------------------
+	@ num of bytes to move = strlen(r1) + 1
+	push	{r0, r1, lr}
+	mov		r0, r1
+	bl		strlen
+
+	add		r2, r0, #1
+	pop		{r0, r1}
+	@ memmove(dest, src, size)
+	bl		memmove			@ returns 'dest'
+	pop		{lr}	
+	@----------------------
+	
+9:@RETURN
+	bx		lr				@ first byte of r0 was valid or 0
+
+
+

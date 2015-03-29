@@ -10,6 +10,7 @@
 
 static void _test_ACGI_is_uint(void);
 static void _test_ACGI_rtrim(void);
+static void _test_ACGI_ltrim(void);
 static void _test_ACGI_url(void);
 static void _test_ACGI_file_get_size(void);
 
@@ -18,6 +19,7 @@ main(int argc, char *argv[])
 {
 	_test_ACGI_is_uint();
 	_test_ACGI_rtrim();
+	_test_ACGI_ltrim();
 	_test_ACGI_url();
 	_test_ACGI_file_get_size();
 
@@ -87,6 +89,35 @@ _test_ACGI_rtrim(void)
 
 		strcpy(buf, before[n]);
 		assert(ACGI_rtrim(buf, buf + strlen(buf)) == buf);
+		assert(! strcmp(buf, after[n]));
+	}
+}
+
+static void
+_test_ACGI_ltrim(void)
+{
+	puts(__FUNCTION__);
+
+	char before[][15] =	{	"   test1",
+							"",
+							" ",
+							"		 test",
+							"\nexample",
+							"\r\nline"		};
+	char after[][15] = 	{ 	"test1",
+							"",
+							"",
+							"test",
+							"example",
+							"line" 			};
+	size_t	n = sizeof(before) / 15;
+
+	char buf[30];
+	while (n)
+	{
+		--n;
+		strcpy(buf, before[n]);
+		assert(ACGI_ltrim(buf) == buf);
 		assert(! strcmp(buf, after[n]));
 	}
 }
