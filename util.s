@@ -301,17 +301,19 @@ ACGI_ltrim:
 	@ find the first legal character in @str
 	@ while (*str) ++str;
 	@----------------------
-	b		2f @SCAN
-1:@CONDITION
-	teq		r2, #0			@ end of string?
-	streqb	r2, [r0]		@ set empty string
-	beq		9f @RETURN		@ only illegal characters found 
-2:@SCAN
+1:@LOOP
 	ldrb	r2, [r1], #1	@ load byte from string and increment pointer
-	cmp		r2, #0x21		@ below 0x21 are space and control chars
-	blt		1b @CONDITION	@ could be end of string
+
+	cmp		r2, #0x20		@ below 0x21 are space and control chars
+	bgt		2f @DEL?		@ can't be end of string, so skip test
+
+	teq		r2, #0			@ end of string?
+	bne		1b @LOOP		@ no, continue
+	strb	r2, [r0]		@ yes, set empty string
+	b		9f @RETURN		@ and return - only illegal characters found 
+2:@DEL?
 	teq		r2, #127		@ is it DEL?
-	beq		2b @SCAN
+	beq		1b @LOOP		@ yes, continue
 	@ valid character found. fall through / @BREAK
 	@----------------------
 	
@@ -321,17 +323,13 @@ ACGI_ltrim:
 	ble		9f @RETURN		@ if not, nothing to trim
 
 @TRIM
-	@----------------------
-	@ num of bytes to move = strlen(r1) + 1
-	push	{r0, r1, lr}
-	mov		r0, r1
-	bl		strlen
-
-	add		r2, r0, #1
-	pop		{r0, r1}
-	@ memmove(dest, src, size)
-	bl		memmove			@ returns 'dest'
-	pop		{lr}	
+	@---------------------- 
+	mov		r3, r0			@ copy @str
+1:@LOOP
+	ldrb	r2, [r1], #1	@ load byte from after space characters
+	strb	r2, [r3], #1	@ store it to beginning of @str
+	teq		r2, #0			@ repeat if not end string
+	bne		1b
 	@----------------------
 	
 9:@RETURN
